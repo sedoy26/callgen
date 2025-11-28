@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimal Video Call</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="app-container">
+        <div id="videos">
+            <div class="video-container local">
+                <video id="localVideo" autoplay playsinline muted></video>
+                <div class="label">You</div>
+            </div>
+            <!-- Remote videos will be added here dynamically -->
+        </div>
+
+        <div id="chat-container">
+            <div id="chat-messages"></div>
+            <div id="chat-input-area">
+                <input type="text" id="chatInput" placeholder="Type a message..." maxlength="140">
+                <button id="sendBtn">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="controls">
+        <button id="muteBtn" disabled>Mute Mic</button>
+        <button id="cameraBtn" disabled>Stop Camera</button>
+        <button id="shareBtn" disabled>Share Screen</button>
+        <button id="chatToggleBtn">Chat</button>
+    </div>
+
+    <div id="emoji-bar">
+        <button class="emoji-btn" data-emoji="👋">👋</button>
+        <button class="emoji-btn" data-emoji="👍">👍</button>
+        <button class="emoji-btn" data-emoji="😂">😂</button>
+        <button class="emoji-btn" data-emoji="🎉">🎉</button>
+        <button class="emoji-btn" data-emoji="❤️">❤️</button>
+    </div>
+
+    <div id="emoji-overlay"></div>
+
+    <script src="config.js"></script>
+    <script src="main.js"></script>
+</body>
+
+</html>

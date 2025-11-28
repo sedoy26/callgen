@@ -1,0 +1,15 @@
+{
+    "name": "callgen-relay",
+    "version": "1.0.0",
+    "description": "Minimal WebSocket relay server for CalGen",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js"
+    },
+    "dependencies": {
+        "ws": "^8.13.0"
+    },
+    "engines": {
+        "node": ">=14.0.0"
+    }
+}
