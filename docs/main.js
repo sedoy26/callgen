@@ -424,5 +424,16 @@ document.querySelectorAll('.emoji-btn').forEach(btn => {
     });
 });
 
+// Handle window close/refresh
+window.addEventListener('beforeunload', () => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.close();
+    }
+    // Stop all local tracks
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+    }
+});
+
 // Start the app
 start();
