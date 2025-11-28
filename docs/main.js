@@ -126,11 +126,16 @@ function createPeerConnection(peerId) {
     };
 
     pc.ontrack = (event) => {
+        console.log(`Received track from ${peerId}:`, event.track.kind);
+
         // Prevent duplicate videos for the same peer
         if (peers[peerId] && peers[peerId].videoEl) {
             console.log(`Video element already exists for ${peerId}, updating stream`);
             const vid = peers[peerId].videoEl.querySelector('video');
-            if (vid) vid.srcObject = event.streams[0];
+            if (vid) {
+                vid.srcObject = event.streams[0];
+                vid.play().catch(e => console.error('Error playing video:', e));
+            }
             return;
         }
 
@@ -142,6 +147,9 @@ function createPeerConnection(peerId) {
             const vid = document.createElement('video');
             vid.autoplay = true;
             vid.playsInline = true; // Critical for mobile
+            vid.muted = false; // Remote video should not be muted
+
+            // Set srcObject AFTER setting attributes
             vid.srcObject = event.streams[0];
 
             const label = document.createElement('div');
@@ -153,6 +161,9 @@ function createPeerConnection(peerId) {
             videosDiv.appendChild(container);
 
             peers[peerId].videoEl = container;
+
+            // Explicitly try to play
+            vid.play().catch(e => console.error('Error playing new video:', e));
         }
     };
 
@@ -197,12 +208,23 @@ async function handleCandidate(candidate, peerId) {
 }
 
 function removePeer(peerId) {
+    console.log(`Removing peer ${peerId}`);
     if (peers[peerId]) {
-        peers[peerId].connection.close();
+        if (peers[peerId].connection) {
+            peers[peerId].connection.close();
+        }
         if (peers[peerId].videoEl) {
             peers[peerId].videoEl.remove();
         }
+        // Double check DOM removal
+        const el = document.getElementById(`container-${peerId}`);
+        if (el) el.remove();
+
         delete peers[peerId];
+    } else {
+        // Even if peer object is gone, ensure UI is clean
+        const el = document.getElementById(`container-${peerId}`);
+        if (el) el.remove();
     }
 }
 
