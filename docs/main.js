@@ -41,18 +41,21 @@ async function start() {
 
     // 2. Initialize Camera
     try {
-        // Try HD Resolution first
+        // Mobile-friendly constraints
+        const constraints = {
+            audio: true,
+            video: {
+                facingMode: 'user', // Default to front camera
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            }
+        };
+
         try {
-            localStream = await navigator.mediaDevices.getUserMedia({
-                video: { width: 1280, height: 720 },
-                audio: true
-            });
+            localStream = await navigator.mediaDevices.getUserMedia(constraints);
         } catch (e) {
-            console.warn('HD resolution failed, falling back to VGA/Default', e);
-            localStream = await navigator.mediaDevices.getUserMedia({
-                video: true,
-                audio: true
-            });
+            console.warn('HD/Front camera failed, falling back to basic constraints', e);
+            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         }
 
         // Show raw camera
@@ -123,6 +126,14 @@ function createPeerConnection(peerId) {
     };
 
     pc.ontrack = (event) => {
+        // Prevent duplicate videos for the same peer
+        if (peers[peerId] && peers[peerId].videoEl) {
+            console.log(`Video element already exists for ${peerId}, updating stream`);
+            const vid = peers[peerId].videoEl.querySelector('video');
+            if (vid) vid.srcObject = event.streams[0];
+            return;
+        }
+
         if (!peers[peerId].videoEl) {
             const container = document.createElement('div');
             container.className = 'video-container';
@@ -130,7 +141,7 @@ function createPeerConnection(peerId) {
 
             const vid = document.createElement('video');
             vid.autoplay = true;
-            vid.playsInline = true;
+            vid.playsInline = true; // Critical for mobile
             vid.srcObject = event.streams[0];
 
             const label = document.createElement('div');

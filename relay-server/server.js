@@ -14,6 +14,7 @@ wss.on('connection', (ws, req) => {
     console.log(`Client connected from: ${origin}`);
 
     ws.id = Math.random().toString(36).substring(2, 15);
+    ws.isAlive = true;
     ws.messageCount = 0;
     ws.lastMessageReset = Date.now();
 
@@ -57,13 +58,38 @@ wss.on('connection', (ws, req) => {
 
     ws.on('close', () => {
         console.log(`Client disconnected: ${ws.id}`);
-        wss.clients.forEach((client) => {
-            if (client !== ws && client.readyState === WebSocket.OPEN) {
-                client.send(JSON.stringify({ type: 'peer-disconnected', id: ws.id }));
-            }
-        });
+        broadcastDisconnect(ws);
+    });
+
+    ws.on('pong', () => {
+        ws.isAlive = true;
     });
 });
+
+// Heartbeat to detect dead connections
+const interval = setInterval(() => {
+    wss.clients.forEach((ws) => {
+        if (ws.isAlive === false) {
+            console.log(`Client timed out: ${ws.id}`);
+            return ws.terminate();
+        }
+
+        ws.isAlive = false;
+        ws.ping();
+    });
+}, 30000);
+
+wss.on('close', () => {
+    clearInterval(interval);
+});
+
+function broadcastDisconnect(ws) {
+    wss.clients.forEach((client) => {
+        if (client !== ws && client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({ type: 'peer-disconnected', id: ws.id }));
+        }
+    });
+}
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
