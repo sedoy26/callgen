@@ -19,7 +19,26 @@
 
     <div id="controls">
         <button id="muteBtn">Mute Mic</button>
+        <button id="cameraBtn">Stop Camera</button>
     </div>
+
+    <div id="emoji-bar">
+        <button class="emoji-btn" data-emoji="👋">👋</button>
+        <button class="emoji-btn" data-emoji="👍">👍</button>
+        <button class="emoji-btn" data-emoji="😂">😂</button>
+        <button class="emoji-btn" data-emoji="🎉">🎉</button>
+        <button class="emoji-btn" data-emoji="❤️">❤️</button>
+    </div>
+
+    <div id="chat-container">
+        <div id="chat-messages"></div>
+        <div id="chat-input-area">
+            <input type="text" id="chatInput" placeholder="Type a message..." maxlength="140">
+            <button id="sendBtn">Send</button>
+        </div>
+    </div>
+
+    <div id="emoji-overlay"></div>
 
     <script src="main.js"></script>
 </body>

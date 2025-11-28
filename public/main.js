@@ -69,6 +69,14 @@ async function handleSignalingData(data) {
         case 'peer-disconnected':
             removePeer(data.id);
             break;
+
+        case 'chat':
+            handleChat(data.text, data.sender);
+            break;
+
+        case 'emoji':
+            handleEmoji(data.emoji);
+            break;
     }
 }
 
@@ -176,7 +184,85 @@ function toggleMute() {
     }
 }
 
+const cameraBtn = document.getElementById('cameraBtn');
+const chatInput = document.getElementById('chatInput');
+const sendBtn = document.getElementById('sendBtn');
+const chatMessages = document.getElementById('chat-messages');
+const emojiOverlay = document.getElementById('emoji-overlay');
+
+function toggleCamera() {
+    if (!localStream) {
+        console.warn('Local stream not ready yet');
+        return;
+    }
+    const videoTrack = localStream.getVideoTracks()[0];
+    if (videoTrack) {
+        videoTrack.enabled = !videoTrack.enabled;
+        cameraBtn.innerText = videoTrack.enabled ? 'Stop Camera' : 'Start Camera';
+        cameraBtn.classList.toggle('camera-off', !videoTrack.enabled);
+    } else {
+        console.warn('No video track found');
+        alert('No camera detected');
+    }
+}
+
+function sendChat() {
+    const text = chatInput.value.trim();
+    if (text) {
+        const message = { type: 'chat', text: text };
+        send(message);
+        appendMessage('You', text, 'local');
+        chatInput.value = '';
+    }
+}
+
+function handleChat(text, senderId) {
+    appendMessage(`User ${senderId.substr(0, 4)}`, text, 'remote');
+}
+
+function appendMessage(sender, text, type) {
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `message ${type}`;
+    msgDiv.innerText = `${sender}: ${text}`;
+    chatMessages.appendChild(msgDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function sendEmoji(emoji) {
+    send({ type: 'emoji', emoji: emoji });
+    showFloatingEmoji(emoji);
+}
+
+function handleEmoji(emoji) {
+    showFloatingEmoji(emoji);
+}
+
+function showFloatingEmoji(emoji) {
+    const el = document.createElement('div');
+    el.className = 'floating-emoji';
+    el.innerText = emoji;
+    el.style.left = Math.random() * 80 + 10 + '%'; // Random horizontal position
+    emojiOverlay.appendChild(el);
+
+    // Remove after animation
+    setTimeout(() => {
+        el.remove();
+    }, 3000);
+}
+
+// Event Listeners
 muteBtn.addEventListener('click', toggleMute);
+cameraBtn.addEventListener('click', toggleCamera);
+sendBtn.addEventListener('click', sendChat);
+chatInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') sendChat();
+});
+
+document.querySelectorAll('.emoji-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        sendEmoji(btn.dataset.emoji);
+    });
+});
 
 // Start the app
 start();

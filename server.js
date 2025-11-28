@@ -61,7 +61,7 @@ wss.on('connection', (ws) => {
             const data = JSON.parse(message);
 
             // Input Validation
-            const allowedTypes = ['offer', 'answer', 'candidate', 'ready'];
+            const allowedTypes = ['offer', 'answer', 'candidate', 'ready', 'chat', 'emoji'];
             if (!data.type || typeof data.type !== 'string' || !allowedTypes.includes(data.type)) {
                 console.warn(`Invalid message type from ${ws.id}: ${data.type}`);
                 return;
