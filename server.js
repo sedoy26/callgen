@@ -12,8 +12,8 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            connectSrc: ["'self'", "ws:", "wss:"], // Allow WebSocket connections
-            scriptSrc: ["'self'"], // unsafe-inline no longer needed
+            connectSrc: ["'self'", "ws:", "wss:"],
+            scriptSrc: ["'self'"],
             imgSrc: ["'self'", "data:", "blob:"],
             mediaSrc: ["'self'", "blob:"],
         },

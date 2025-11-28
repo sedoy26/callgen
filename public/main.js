@@ -14,14 +14,10 @@ const rtcConfig = {
 };
 
 async function start() {
+    // 1. Initialize WebSocket (Signaling)
     try {
-        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        localVideo.srcObject = localStream;
-
-        // Determine protocol: ws for http, wss for https
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const wsUrl = `${protocol}//${window.location.host}`;
-
         ws = new WebSocket(wsUrl);
 
         ws.onmessage = async (event) => {
@@ -32,12 +28,42 @@ async function start() {
         ws.onopen = () => {
             console.log('Connected to signaling server');
         };
+    } catch (e) {
+        console.error('WebSocket init failed:', e);
+    }
+
+    // 2. Initialize Camera
+    try {
+        // Try HD Resolution first
+        try {
+            localStream = await navigator.mediaDevices.getUserMedia({
+                video: { width: 1280, height: 720 },
+                audio: true
+            });
+        } catch (e) {
+            console.warn('HD resolution failed, falling back to VGA/Default', e);
+            localStream = await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: true
+            });
+        }
+
+        // Show raw camera
+        localVideo.srcObject = localStream;
+
+        // Enable buttons
+        muteBtn.disabled = false;
+        cameraBtn.disabled = false;
+        shareBtn.disabled = false;
 
     } catch (err) {
         console.error('Error starting video call:', err);
-        alert('Could not access camera/microphone. Please allow permissions.');
+        alert('Could not access camera/microphone. Chat and Emojis will still work.');
     }
 }
+
+// Start the app
+start();
 
 async function handleSignalingData(data) {
     switch (data.type) {
@@ -211,7 +237,8 @@ function sendChat() {
     if (text) {
         const message = { type: 'chat', text: text };
         send(message);
-        appendMessage('You', text, 'local');
+        // User requested NOT to see their own messages
+        // appendMessage('You', text, 'local'); 
         chatInput.value = '';
     }
 }
@@ -250,9 +277,102 @@ function showFloatingEmoji(emoji) {
     }, 3000);
 }
 
+// Screen Sharing Logic
+const shareBtn = document.getElementById('shareBtn');
+let isSharing = false;
+let screenStream;
+
+async function toggleScreenShare() {
+    if (isSharing) {
+        stopScreenShare();
+    } else {
+        startScreenShare();
+    }
+}
+
+async function startScreenShare() {
+    try {
+        screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+        const screenTrack = screenStream.getVideoTracks()[0];
+
+        // Handle user clicking "Stop sharing" in browser UI
+        screenTrack.onended = () => {
+            stopScreenShare();
+        };
+
+        // Replace track in local stream
+        const videoSender = localStream.getVideoTracks()[0];
+        localStream.removeTrack(videoSender);
+        localStream.addTrack(screenTrack);
+        localVideo.srcObject = localStream;
+
+        // Replace track for all peers
+        updatePeerTracks(screenTrack);
+
+        isSharing = true;
+        shareBtn.innerText = 'Stop Sharing';
+        shareBtn.classList.add('active');
+    } catch (err) {
+        console.error('Error sharing screen:', err);
+    }
+}
+
+function stopScreenShare() {
+    if (!isSharing) return;
+
+    // Stop screen stream
+    if (screenStream) {
+        screenStream.getTracks().forEach(track => track.stop());
+    }
+
+    // Get camera track again
+    navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } })
+        .then(camStream => {
+            const camTrack = camStream.getVideoTracks()[0];
+
+            // Replace track in local stream
+            const currentTrack = localStream.getVideoTracks()[0];
+            localStream.removeTrack(currentTrack);
+            localStream.addTrack(camTrack);
+            localVideo.srcObject = localStream;
+
+            // Replace track for all peers
+            updatePeerTracks(camTrack);
+
+            isSharing = false;
+            shareBtn.innerText = 'Share Screen';
+            shareBtn.classList.remove('active');
+        })
+        .catch(err => {
+            console.error('Error reverting to camera:', err);
+            alert('Could not revert to camera. Please refresh.');
+        });
+}
+
+function updatePeerTracks(newTrack) {
+    Object.values(peers).forEach(peer => {
+        const sender = peer.connection.getSenders().find(s => s.track.kind === 'video');
+        if (sender) {
+            sender.replaceTrack(newTrack);
+        }
+    });
+}
+
+// Mobile Chat Toggle
+const chatToggleBtn = document.getElementById('chatToggleBtn');
+const chatContainer = document.getElementById('chat-container');
+
+if (chatToggleBtn) {
+    chatToggleBtn.addEventListener('click', () => {
+        chatContainer.classList.toggle('visible');
+        chatToggleBtn.classList.toggle('active');
+    });
+}
+
 // Event Listeners
 muteBtn.addEventListener('click', toggleMute);
 cameraBtn.addEventListener('click', toggleCamera);
+shareBtn.addEventListener('click', toggleScreenShare);
 sendBtn.addEventListener('click', sendChat);
 chatInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') sendChat();
