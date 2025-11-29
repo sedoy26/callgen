@@ -134,7 +134,8 @@ function createPeerConnection(peerId) {
             const vid = peers[peerId].videoEl.querySelector('video');
             if (vid) {
                 vid.srcObject = event.streams[0];
-                vid.play().catch(e => console.error('Error playing video:', e));
+                // Try to play, but don't worry if it fails (user can click)
+                vid.play().catch(e => console.log('Autoplay blocked, user must interact'));
             }
             return;
         }
@@ -149,7 +150,7 @@ function createPeerConnection(peerId) {
             vid.playsInline = true; // Critical for mobile
             vid.muted = false; // Remote video should not be muted
 
-            // Set srcObject AFTER setting attributes
+            // Important: Set srcObject first, then try to play
             vid.srcObject = event.streams[0];
 
             const label = document.createElement('div');
@@ -162,8 +163,20 @@ function createPeerConnection(peerId) {
 
             peers[peerId].videoEl = container;
 
-            // Explicitly try to play
-            vid.play().catch(e => console.error('Error playing new video:', e));
+            // Try to play, handle autoplay blocking gracefully
+            const playPromise = vid.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.log('Autoplay blocked for peer video, adding click handler');
+                    // Add a click-to-play overlay
+                    container.style.cursor = 'pointer';
+                    container.onclick = () => {
+                        vid.play();
+                        container.onclick = null;
+                        container.style.cursor = 'default';
+                    };
+                });
+            }
         }
     };
 
