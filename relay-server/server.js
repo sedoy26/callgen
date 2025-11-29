@@ -71,6 +71,7 @@ const interval = setInterval(() => {
     wss.clients.forEach((ws) => {
         if (ws.isAlive === false) {
             console.log(`Client timed out: ${ws.id}`);
+            broadcastDisconnect(ws);
             return ws.terminate();
         }
 
