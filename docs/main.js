@@ -73,15 +73,18 @@ async function start() {
 }
 
 async function handleSignalingData(data) {
+    console.log('Received signaling data:', data.type, 'from:', data.sender);
     switch (data.type) {
         case 'welcome':
             myId = data.id;
+            console.log('My ID:', myId);
             // Announce presence to existing peers
             send({ type: 'ready' });
             break;
 
         case 'ready':
             // A new peer has joined. Initiate connection.
+            console.log('Peer ready:', data.sender);
             if (data.sender !== myId) {
                 initiateConnection(data.sender);
             }
@@ -187,9 +190,15 @@ function createPeerConnection(peerId) {
         }
     };
 
-    localStream.getTracks().forEach(track => {
-        pc.addTrack(track, localStream);
-    });
+    // Only add local tracks if we have a local stream
+    if (localStream) {
+        localStream.getTracks().forEach(track => {
+            console.log(`Adding ${track.kind} track to peer ${peerId}`);
+            pc.addTrack(track, localStream);
+        });
+    } else {
+        console.warn(`No local stream available when creating connection to ${peerId}`);
+    }
 
     peers[peerId] = { connection: pc, videoEl: null };
     return pc;
