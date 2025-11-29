@@ -52,10 +52,17 @@ async function start() {
         };
 
         try {
+            console.log('Requesting camera with constraints:', constraints);
             localStream = await navigator.mediaDevices.getUserMedia(constraints);
+            console.log('Camera access granted, tracks:', localStream.getTracks().map(t => t.kind));
         } catch (e) {
             console.warn('HD/Front camera failed, falling back to basic constraints', e);
-            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            // Try absolute minimum constraints
+            localStream = await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: true
+            });
+            console.log('Fallback camera access granted');
         }
 
         // Show raw camera
@@ -68,7 +75,19 @@ async function start() {
 
     } catch (err) {
         console.error('Error starting video call:', err);
-        alert('Could not access camera/microphone. Chat and Emojis will still work.');
+        console.error('Error name:', err.name);
+        console.error('Error message:', err.message);
+
+        // More specific error messages
+        if (err.name === 'NotAllowedError') {
+            alert('Camera/microphone permission denied. Please allow access and refresh.');
+        } else if (err.name === 'NotFoundError') {
+            alert('No camera/microphone found on this device.');
+        } else if (err.name === 'NotReadableError') {
+            alert('Camera is already in use by another app.');
+        } else {
+            alert('Could not access camera/microphone: ' + err.message);
+        }
     }
 }
 
