@@ -114,12 +114,22 @@ async function handleSignalingData(data) {
 }
 
 function createPeerConnection(peerId) {
+    console.log(`Creating peer connection for ${peerId}`);
     const pc = new RTCPeerConnection(rtcConfig);
 
     pc.onicecandidate = (event) => {
         if (event.candidate) {
+            console.log(`Sending ICE candidate to ${peerId}`);
             send({ type: 'candidate', candidate: event.candidate, target: peerId });
         }
+    };
+
+    pc.oniceconnectionstatechange = () => {
+        console.log(`ICE connection state for ${peerId}: ${pc.iceConnectionState}`);
+    };
+
+    pc.onconnectionstatechange = () => {
+        console.log(`Connection state for ${peerId}: ${pc.connectionState}`);
     };
 
     pc.ontrack = (event) => {
@@ -434,12 +444,21 @@ document.querySelectorAll('.emoji-btn').forEach(btn => {
     });
 });
 
-// Handle window close/refresh
+// Handle window close/refresh (multiple events for better coverage)
 window.addEventListener('beforeunload', () => {
     if (ws && ws.readyState === WebSocket.OPEN) {
         ws.close();
     }
-    // Stop all local tracks
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+    }
+});
+
+// Mobile-friendly cleanup (iOS Safari doesn't always fire beforeunload)
+window.addEventListener('pagehide', () => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.close();
+    }
     if (localStream) {
         localStream.getTracks().forEach(track => track.stop());
     }
