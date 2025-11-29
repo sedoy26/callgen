@@ -4,9 +4,9 @@ const WebSocket = require('ws');
 const server = http.createServer();
 const wss = new WebSocket.Server({ server, maxPayload: 16 * 1024 });
 
-// Rate limiting
+// Rate limiting (relaxed for WebRTC ICE candidates)
 const RATE_LIMIT_WINDOW = 1000;
-const MAX_MESSAGES_PER_WINDOW = 20;
+const MAX_MESSAGES_PER_WINDOW = 50;
 
 wss.on('connection', (ws, req) => {
     // CORS - allow connections from GitHub Pages
@@ -95,4 +95,5 @@ function broadcastDisconnect(ws) {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Relay server running on port ${PORT}`);
+    console.log('Version: 1.1.0 - Heartbeat + Disconnect broadcast');
 });
