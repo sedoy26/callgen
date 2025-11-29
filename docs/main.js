@@ -29,6 +29,7 @@ async function start() {
 
         ws.onopen = () => {
             console.log('Connected to signaling server');
+            // Don't send ready yet - wait for camera
         };
 
         ws.onerror = (error) => {
@@ -73,6 +74,17 @@ async function start() {
         cameraBtn.disabled = false;
         shareBtn.disabled = false;
 
+        // NOW announce presence to existing peers (after camera is ready)
+        console.log('Camera ready, announcing presence to peers');
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            send({ type: 'ready' });
+        } else {
+            // If WebSocket isn't ready yet, wait for it
+            ws.addEventListener('open', () => {
+                send({ type: 'ready' });
+            }, { once: true });
+        }
+
     } catch (err) {
         console.error('Error starting video call:', err);
         console.error('Error name:', err.name);
@@ -97,8 +109,7 @@ async function handleSignalingData(data) {
         case 'welcome':
             myId = data.id;
             console.log('My ID:', myId);
-            // Announce presence to existing peers
-            send({ type: 'ready' });
+            // Don't send ready here - it's sent after camera init
             break;
 
         case 'ready':
